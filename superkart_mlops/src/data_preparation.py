@@ -4,7 +4,17 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from huggingface_hub import hf_hub_download, upload_file
 
-HF_DATASET_REPO = os.environ["HF_DATASET_REPO"]
+
+HF_DATASET_REPO = os.getenv("HF_DATASET_REPO", "ssshruti/superkart-sales-data")
+
+if not HF_DATASET_REPO:
+    raise ValueError("HF_DATASET_REPO is empty. Add it as a GitHub Actions secret.")
+
+RAW_FILE = "data/SuperKart_MLOps.csv"
+TARGET = "Product_Store_Sales_Total"
+
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 TARGET = "Product_Store_Sales_Total"
 
