@@ -1,0 +1,60 @@
+
+name: SuperKart MLOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mlops-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run data preparation
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
+        run: python src/data_preparation.py
+
+      - name: Run model training and registration
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
+          HF_MODEL_REPO: ${{ secrets.HF_MODEL_REPO }}
+        run: python src/train_register_model.py
+
+      - name: Validate deployment files
+        run: |
+          test -f backend/app.py
+          test -f backend/Dockerfile
+          test -f backend/requirements.txt
+          test -f frontend/app.py
+          test -f frontend/Dockerfile
+          test -f frontend/requirements.txt
+          echo "Deployment files validated successfully."
+
+      - name: Commit updated artifacts
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git commit -m "Update MLOps pipeline outputs" || echo "No changes to commit"
+          git push
